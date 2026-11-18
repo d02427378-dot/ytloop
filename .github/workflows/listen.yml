@@ -1,51 +1,23 @@
-name: listen
+name: MultiScreen Bot
 on:
-  workflow_dispatch:
-    inputs:
-      workers:
-        default: "2"
-      minutes:
-        default: "340"
-      proxies:
-        description: "none / free / custom"
-        default: "none"
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 */6 * * *"   # relance toutes les 6 h (UTC)
+  workflow_dispatch:         # lancement manuel
+
 concurrency:
-  group: listen
+  group: bot
   cancel-in-progress: false
+
 jobs:
-  go:
+  run:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - run: pip install -q -r requirements.txt
-      - run: playwright install --with-deps chromium
-      - name: proxies
-        run: |
-          if [ "${{ github.event.inputs.proxies }}" = "free" ]; then
-            curl -sL https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt -o proxies.txt || true
-            curl -sL https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt >> proxies.txt || true
-            sort -u proxies.txt -o proxies.txt
-            echo "$(wc -l < proxies.txt) proxies"
-          fi
-      - name: lecture
+          python-version: "3.11"
+      - run: pip install playwright && playwright install --with-deps chromium
+      - run: python bot.py --minutes 340 --interval 360
         env:
-          W: ${{ github.event.inputs.workers || '2' }}
-          M: ${{ github.event.inputs.minutes || '340' }}
-          P: ${{ github.event.inputs.proxies || 'none' }}
-        run: |
-          mkdir -p logs
-          if [ "$P" = "custom" ]; then ARG="--proxies proxies.txt"; else ARG=""; fi
-          timeout $(( M * 60 )) python bot.py --workers "$W" $ARG > logs/bot.log 2>&1 || true
-          tail -n 50 logs/bot.log
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: logs-${{ github.run_id }}
-          path: logs/
-          retention-days: 3
+          VIDEO_URL: "https://youtu.be/NrVpHJvtCGc?si=iXPaGaZVcvQn_-qM"
